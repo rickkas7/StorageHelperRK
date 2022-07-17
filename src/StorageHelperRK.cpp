@@ -135,8 +135,6 @@ void StorageHelperRK::PersistentDataBase::initialize() {
 //
 bool StorageHelperRK::PersistentDataEEPROM::load() {
     WITH_LOCK(*this) {
-        bool loaded = false;
-
         HAL_EEPROM_Get(eepromOffset, savedDataHeader, savedDataSize);
         if (!validate(savedDataHeader->size)) {
             initialize();

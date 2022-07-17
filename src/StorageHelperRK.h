@@ -783,25 +783,16 @@ public:
         /**
          * @brief Base class for persistent data saved in file
          * 
+         * @param eepromOffset Offset into the EEPROM to store the data.
          * @param savedDataHeader Pointer to the saved data header
          * @param savedDataSize size of the whole structure, including the user data after it 
          * @param savedDataMagic Magic bytes to use for this data
          * @param savedDataVersion Version to use for this data
          */
-        PersistentDataEEPROM(SavedDataHeader *savedDataHeader, size_t savedDataSize, uint32_t savedDataMagic, uint16_t savedDataVersion) : 
-            PersistentDataBase(savedDataHeader, savedDataSize, savedDataMagic, savedDataVersion) {
+        PersistentDataEEPROM(int eepromOffset, SavedDataHeader *savedDataHeader, size_t savedDataSize, uint32_t savedDataMagic, uint16_t savedDataVersion) : 
+            PersistentDataBase(savedDataHeader, savedDataSize, savedDataMagic, savedDataVersion), eepromOffset(eepromOffset) {
         };
         
-        /**
-         * @brief Sets the offset into the EEPROM where the data will reside
-         * 
-         * @param eepromOffset
-         * @return PersistentDataFile& 
-         */
-        PersistentDataEEPROM &withEepromOffset(int eepromOffset) { 
-            this->eepromOffset = eepromOffset; 
-            return *this; 
-        };
 
         /**
          * @brief Load the persistent data file. You normally do not need to call this; it will be loaded automatically.
@@ -820,6 +811,58 @@ public:
         int eepromOffset; //!< Offset into EEPROM to save the data
     };
 #endif // UNITTEST
+
+#if defined(__MB85RC256V_FRAM_RK) || defined(DOXYGEN_BUILD)
+    /**
+     * @brief Support for MB85RC256V-FRAM-RK library.
+     *
+     * If you include "MB85RC256V-FRAM-RK.h" before StorageHelperRK.h, this code will be enabled
+     */
+    class PersistentDataFRAM : public PersistentDataBase {
+    public:
+        /**
+         * @brief Base class for persistent data saved in file
+         * 
+         * @param savedDataHeader Pointer to the saved data header
+         * @param savedDataSize size of the whole structure, including the user data after it 
+         * @param savedDataMagic Magic bytes to use for this data
+         * @param savedDataVersion Version to use for this data
+         */
+        PersistentDataFRAM(MB85RC &fram, int framOffset, SavedDataHeader *savedDataHeader, size_t savedDataSize, uint32_t savedDataMagic, uint16_t savedDataVersion) : 
+            PersistentDataBase(savedDataHeader, savedDataSize, savedDataMagic, savedDataVersion), fram(fram), framOffset(framOffset) {
+        };
+        
+        /**
+         * @brief Load the persistent data file. You normally do not need to call this; it will be loaded automatically.
+         * 
+         * @return true 
+         * @return false 
+         */
+        virtual bool load() {
+            WITH_LOCK(*this) {
+                fram.readData(framOffset, (uint8_t*)savedDataHeader, savedDataSize);
+                if (!validate(savedDataHeader->size)) {
+                    initialize();
+                }
+            }
+
+            return true;
+        }
+
+        /**
+         * @brief Save the persistent data file. You normally do not need to call this; it will be saved automatically.
+         */
+        virtual void save() {
+            WITH_LOCK(*this) {
+                fram.writeData(framOffset, (const uint8_t*)savedDataHeader, savedDataSize);
+            }
+        } 
+
+    protected:
+        MB85RC &fram; //!< Reference to FRAM object
+        int framOffset; //!< Offset into FRAM to save the data
+    };
+    #endif // defined(__MB85RC256V_FRAM_RK) || defined(DOXYGEN_BUILD)
 
     class PersistentDataFileSystem : public PersistentDataBase {
     public:

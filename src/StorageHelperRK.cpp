@@ -93,11 +93,13 @@ uint32_t StorageHelperRK::PersistentDataBase::getHash() const {
 bool StorageHelperRK::PersistentDataBase::validate(size_t dataSize) {
     bool isValid = false;
 
+    uint32_t hash = getHash();
+
     if (dataSize >= 12 && 
         savedDataHeader->magic == savedDataMagic && 
         savedDataHeader->version == savedDataVersion &&
         savedDataHeader->size <= (uint16_t) dataSize &&
-        savedDataHeader->hash == getHash()) {                
+        savedDataHeader->hash == hash) {                
         if ((size_t)dataSize < savedDataSize) {
             // Current structure is larger than what's in the file; pad with zero bytes
             uint8_t *p = (uint8_t *)savedDataHeader;
@@ -109,6 +111,12 @@ bool StorageHelperRK::PersistentDataBase::validate(size_t dataSize) {
         savedDataHeader->hash = getHash();
         isValid = true;
     }   
+    if (!isValid && dataSize != 0 && savedDataHeader->magic != 0) {
+        // Only log if the data is not empty and was not zeroed out, to avoid logging when doing a load operation on
+        // blank data (empty file or zeroed retained memory)
+        Log.trace("got: magic=%08x version=%04x size=%04x hash=%08x", (int)savedDataHeader->magic, (int)savedDataHeader->version, (int)savedDataHeader->size, (int)savedDataHeader->hash);
+        Log.trace("exp: magic=%08x version=%04x size=%04x hash=%08x", (int)savedDataMagic, (int)savedDataVersion, (int)dataSize, (int)hash);
+    }
     return isValid;
 }
 
@@ -156,10 +164,6 @@ bool StorageHelperRK::PersistentDataFileSystem::load() {
             dataSize = fs->read((uint8_t *)savedDataHeader, savedDataSize);
             if (validate(dataSize)) {
                 loaded = true;
-            }
-            else {
-                Log.trace("file data failed validation");
-                //Log.dump(savedDataHeader, savedDataSize);
             }
             fs->close();
         }

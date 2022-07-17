@@ -355,6 +355,7 @@ public:
 void customRetainedDataTest() {
 
 	RetainedDataTest::MyData retainedData; // Simulating retained data
+	memset(&retainedData, 0, sizeof(retainedData));
 
 
 	RetainedDataTest data(&retainedData.header);

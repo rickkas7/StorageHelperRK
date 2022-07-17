@@ -1,20 +1,14 @@
-// These must be included before StorageHelperRK.h!
-#include "SdFat.h"
-
 #include "StorageHelperRK.h"
+
+
+SerialLogHandler logHandler(LOG_LEVEL_INFO);
 
 
 SYSTEM_THREAD(ENABLED);
 SYSTEM_MODE(SEMI_AUTOMATIC);
 
-SerialLogHandler logHandler(LOG_LEVEL_TRACE);
 
-const int SD_CHIP_SELECT = A2;
-
-SdFat sdCard;
-
-
-class MyPersistentData : public StorageHelperRK::PersistentDataFileSystem {
+class MyPersistentData : public StorageHelperRK::PersistentDataEEPROM {
 public:
 	class MyData {
 	public:
@@ -34,9 +28,7 @@ public:
 	static const uint32_t DATA_MAGIC = 0x20a99e73;
 	static const uint16_t DATA_VERSION = 1;
 
-	MyPersistentData() : StorageHelperRK::PersistentDataFileSystem(new StorageHelperRK::FileSystemSdFat(sdCard), &myData.header, sizeof(MyData), DATA_MAGIC, DATA_VERSION) {
-        withFilename("test4.dat");
-    };
+	MyPersistentData() : PersistentDataEEPROM(&myData.header, sizeof(MyData), DATA_MAGIC, DATA_VERSION) {};
 
 	int getValue_test1() const {
 		return getValue<int>(offsetof(MyData, test1));
@@ -83,20 +75,7 @@ public:
 
 
 void setup() {
-    // Optional: Enable to make it easier to see debug USB serial messages at startup
-    waitFor(Serial.isConnected, 10000);
-    delay(2000);
-
-	if (sdCard.begin(SD_CHIP_SELECT, SPI_FULL_SPEED)) {
-		Log.info("sd card initialized");
-	}
-	else {
-		Log.info("failed to initialize sd card");
-	}
-
 	Particle.connect();
-
-
 }
 
 void loop() {
@@ -106,6 +85,7 @@ void loop() {
         lastCheck = millis();
 
         MyPersistentData data;
+        data.withEepromOffset(0);
 
         data.load();
 
@@ -115,9 +95,6 @@ void loop() {
         data.setValue_test2(!data.getValue_test2());
         data.setValue_test3(data.getValue_test3() - 0.1);
         data.setValue_test4("testing!"); 
-
-        data.logData("after update");
-
         data.flush(true);
     }  
 }

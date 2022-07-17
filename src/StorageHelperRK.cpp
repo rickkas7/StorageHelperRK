@@ -162,6 +162,10 @@ bool StorageHelperRK::PersistentDataFileSystem::load() {
         int fd = fs->open(filename, O_RDONLY);
         if (fd != -1) {
             dataSize = fs->read((uint8_t *)savedDataHeader, savedDataSize);
+
+            // Log.info("request to read %d, got %d bytes", (int)savedDataSize, (int) dataSize);
+            // Log.dump((const uint8_t *)savedDataHeader, dataSize);
+
             if (validate(dataSize)) {
                 loaded = true;
             }
@@ -183,7 +187,11 @@ void StorageHelperRK::PersistentDataFileSystem::save() {
     WITH_LOCK(*this) {
         int fd = fs->open(filename, O_RDWR | O_CREAT | O_TRUNC);
         if (fd != -1) {            
-            fs->write((const uint8_t *)savedDataHeader, savedDataSize);
+            size_t count = fs->write((const uint8_t *)savedDataHeader, savedDataSize);
+
+            // Log.info("request to write %d, wrote %d bytes", (int)savedDataSize, (int) count);
+            // Log.dump((const uint8_t *)savedDataHeader, savedDataSize);
+
             fs->close();
         }
     }

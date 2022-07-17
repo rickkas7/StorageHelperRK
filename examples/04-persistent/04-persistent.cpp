@@ -75,13 +75,10 @@ public:
 
 
 void setup() {
-    StorageHelperRK::instance()
-        .withSleepEnabled(false)
-        .setup();
+	Particle.connect();
 }
 
 void loop() {
-    StorageHelperRK::instance().loop();
 
     static unsigned long lastCheck = 0;
     if (millis() - lastCheck >= 10000) {

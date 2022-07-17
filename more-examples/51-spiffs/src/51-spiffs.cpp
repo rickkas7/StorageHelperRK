@@ -11,10 +11,10 @@ SYSTEM_THREAD(ENABLED);
 SYSTEM_MODE(SEMI_AUTOMATIC);
 
 // Chose a flash configuration:
-SpiFlashISSI spiFlash(SPI, A2); 		// ISSI flash on SPI (A pins)
+// SpiFlashISSI spiFlash(SPI, A2); 		// ISSI flash on SPI (A pins)
 // SpiFlashISSI spiFlash(SPI1, D5);		// ISSI flash on SPI1 (D pins)
 // SpiFlashMacronix spiFlash(SPI1, D5);	// Macronix flash on SPI1 (D pins), typical config for E series
-// SpiFlashWinbond spiFlash(SPI, A2);	// Winbond flash on SPI (A pins)
+SpiFlashWinbond spiFlash(SPI, A2);	// Winbond flash on SPI (A pins)
 // SpiFlashP1 spiFlash;					// P1 external flash inside the P1 module
 
 // Create an object for the SPIFFS file system
@@ -41,7 +41,7 @@ public:
 	static const uint16_t DATA_VERSION = 1;
 
 	MyPersistentData() : StorageHelperRK::PersistentDataFileSystem(new StorageHelperRK::FileSystemSpiffs(spiffsFs), &myData.header, sizeof(MyData), DATA_MAGIC, DATA_VERSION) {
-        withFilename("test4.dat");
+        withFilename("test4");
     };
 
 	int getValue_test1() const {
@@ -89,26 +89,25 @@ public:
 
 
 void setup() {
+    // Optional: Enable to make it easier to see debug USB serial messages at startup
+    waitFor(Serial.isConnected, 10000);
+    delay(2000);
+
     spiFlash.begin();
 	spiffsFs.withPhysicalSize(64 * 1024);
 
 	s32_t res = spiffsFs.mountAndFormatIfNecessary();
 	Log.info("mount res=%d", (int)res);
 
-    StorageHelperRK::instance()
-        .withSleepEnabled(false)
-        .setup();
 
-
+	Particle.connect();
 }
 
 void loop() {
-    StorageHelperRK::instance().loop();
 
     static unsigned long lastCheck = 0;
     if (millis() - lastCheck >= 10000) {
         lastCheck = millis();
-        const char *persistentDataPath = "test04.dat";
 
         MyPersistentData data;
 

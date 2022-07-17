@@ -3,7 +3,14 @@
 
 #include "Particle.h"
 
+#include <fcntl.h>
+#if HAL_PLATFORM_FILESYSTEM || defined(UNITTEST)
+#include <sys/stat.h>
+#endif
 
+/**
+ * @brief Class for storing data on a variety of different storage media
+ */
 class StorageHelperRK {
 public:
     /**
@@ -149,6 +156,16 @@ public:
         virtual bool close() = 0;
 
         /**
+         * @brief Set file position
+         *
+         * @param seekTo The file offset to seek to if >= 0. Must be <= file length. Or pass
+         * -1 to seek to the end of the file to append.
+         *
+         * @returns true on success or false on error
+         */
+        virtual bool seek(int seekTo);
+
+        /**
          * @brief Truncate a file to a specified length in bytes
          *
          * @param size Size is bytes. Must be <= the current length of the file.
@@ -215,22 +232,30 @@ public:
         int translateMode(int mode) {
             int spiffsMode = 0;
 
+            switch(mode & O_ACCMODE) {
+                case O_RDONLY:
+                    spiffsMode |= SPIFFS_O_RDONLY;
+                    break;
+                case O_WRONLY:
+                    spiffsMode |= SPIFFS_O_WRONLY;
+                    break;
+                case O_RDWR:
+                default:
+                    spiffsMode |= SPIFFS_O_RDWR;
+                    break;
+            }
+
             if (mode & O_APPEND) {
                 spiffsMode |= SPIFFS_O_APPEND;
             }
-            if (mode && O_TRUNC) {
+            if (mode & O_TRUNC) {
                 spiffsMode |= SPIFFS_O_TRUNC;
             }
-            if (mode && O_CREAT) {
+            if (mode & O_CREAT) {
                 spiffsMode |= SPIFFS_O_CREAT;
             }
-            if (mode && O_RDONLY) {
-                spiffsMode |= SPIFFS_O_RDONLY;
-            }
-            if (mode && O_WRONLY) {
-                spiffsMode |= SPIFFS_O_WRONLY;
-            }
-            // O_RDWR is O_RDONLY | O_WRONLY
+
+            Log.info("in mode %04x out mode %04x", (int) mode, (int) spiffsMode);
 
             return spiffsMode;
         }
@@ -385,7 +410,7 @@ public:
          *
          * @param length Number of bytes to write.
          */
-        virtual size_t write(int seekTo, const uint8_t *buffer, size_t length) {
+        virtual size_t write(const uint8_t *buffer, size_t length) {
             return file.write(buffer, length);
         }
 

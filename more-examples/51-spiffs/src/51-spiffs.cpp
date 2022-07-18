@@ -40,8 +40,7 @@ public:
 	static const uint32_t DATA_MAGIC = 0x20a99e73;
 	static const uint16_t DATA_VERSION = 1;
 
-	MyPersistentData() : StorageHelperRK::PersistentDataFileSystem(new StorageHelperRK::FileSystemSpiffs(spiffsFs), &myData.header, sizeof(MyData), DATA_MAGIC, DATA_VERSION) {
-        withFilename("test4");
+	MyPersistentData() : StorageHelperRK::PersistentDataFileSystem(new StorageHelperRK::FileSystemSpiffs(spiffsFs), "test4", &myData.header, sizeof(MyData), DATA_MAGIC, DATA_VERSION) {
     };
 
 	int getValue_test1() const {

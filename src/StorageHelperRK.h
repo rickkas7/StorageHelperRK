@@ -163,7 +163,7 @@ public:
          *
          * @returns true on success or false on error
          */
-        virtual bool seek(int seekTo);
+        virtual bool seek(int seekTo) = 0;
 
         /**
          * @brief Truncate a file to a specified length in bytes
@@ -438,7 +438,7 @@ public:
     };
     #endif /* SdFat_h */
 
-    #if HAL_PLATFORM_FILESYSTEM || defined(UNITTEST)
+    #if HAL_PLATFORM_FILESYSTEM || defined(UNITTEST) || defined(DOXYGEN_BUILD)
     /**
      * @brief Concrete subclass for storing events on a Particle Gen 3 LittleFS POSIX file system
      */
@@ -547,7 +547,7 @@ public:
         int fd = -1;			//!< File descriptor for the events file
     };
 
-    #endif /* HAL_PLATFORM_FILESYSTEM || defined(UNITTEST) */
+    #endif /* HAL_PLATFORM_FILESYSTEM || defined(UNITTEST) || defined(DOXYGEN_BUILD) */
 
     /**
      * @brief Base class for storing persistent binary data to a file or retained memory
@@ -870,6 +870,7 @@ public:
          * @brief Class for persistent data saved to a file system
          * 
          * @param fs The FileSystemBase object subclass to use (Posix, SdFat, SPIFFS, etc.) 
+         * @param filename The filename or pathname to the file used to save data
          * @param savedDataHeader Pointer to the saved data header
          * @param savedDataSize size of the whole structure, including the user data after it 
          * @param savedDataMagic Magic bytes to use for this data
@@ -879,8 +880,8 @@ public:
          * 
          * You will probably want to use the withFilename() method to set the filename to save the data to.
          */
-        PersistentDataFileSystem(FileSystemBase *fs, SavedDataHeader *savedDataHeader, size_t savedDataSize, uint32_t savedDataMagic, uint16_t savedDataVersion) : 
-            PersistentDataBase(savedDataHeader, savedDataSize, savedDataMagic, savedDataVersion), fs(fs) {
+        PersistentDataFileSystem(FileSystemBase *fs, const char *filename, SavedDataHeader *savedDataHeader, size_t savedDataSize, uint32_t savedDataMagic, uint16_t savedDataVersion) : 
+            PersistentDataBase(savedDataHeader, savedDataSize, savedDataMagic, savedDataVersion), fs(fs), filename(filename) {
         };
 
         virtual ~PersistentDataFileSystem() {
@@ -918,7 +919,7 @@ public:
         String filename;
     };
 
-    #if HAL_PLATFORM_FILESYSTEM || defined(UNITTEST)
+    #if HAL_PLATFORM_FILESYSTEM || defined(UNITTEST) || defined(DOXYGEN_BUILD)
     /**
      * @brief Base class for persistent data stored in a file on the POSIX file system
      * 
@@ -928,29 +929,19 @@ public:
         /**
          * @brief Base class for persistent data saved in file
          * 
+         * @param filename The filename or pathname to the file used to save data
          * @param savedDataHeader Pointer to the saved data header
          * @param savedDataSize size of the whole structure, including the user data after it 
          * @param savedDataMagic Magic bytes to use for this data
          * @param savedDataVersion Version to use for this data
          */
-        PersistentDataFile(SavedDataHeader *savedDataHeader, size_t savedDataSize, uint32_t savedDataMagic, uint16_t savedDataVersion) : 
-            PersistentDataFileSystem(new FileSystemPosix(), savedDataHeader, savedDataSize, savedDataMagic, savedDataVersion) {
+        PersistentDataFile(const char *filename, SavedDataHeader *savedDataHeader, size_t savedDataSize, uint32_t savedDataMagic, uint16_t savedDataVersion) : 
+            PersistentDataFileSystem(new FileSystemPosix(), filename, savedDataHeader, savedDataSize, savedDataMagic, savedDataVersion) {
         };
-        
-        /**
-         * @brief Sets the path to the persistent data file on the file system
-         * 
-         * @param path 
-         * @return PersistentDataFile& 
-         */
-        PersistentDataFile &withPath(const char *path) { 
-            PersistentDataFileSystem::withFilename(path);
-            return *this; 
-        };
-
+    
     protected:
     };
-    #endif // HAL_PLATFORM_FILESYSTEM || defined(UNITTEST)
+    #endif // HAL_PLATFORM_FILESYSTEM || defined(UNITTEST) || defined(DOXYGEN_BUILD)
 
     /**
      * @brief Murmur3 hash algorithm implementation

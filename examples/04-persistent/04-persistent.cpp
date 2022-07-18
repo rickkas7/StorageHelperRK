@@ -8,6 +8,9 @@ SYSTEM_THREAD(ENABLED);
 SYSTEM_MODE(SEMI_AUTOMATIC);
 
 
+const char *persistentDataPath = "/usr/test04.dat";
+
+
 class MyPersistentData : public StorageHelperRK::PersistentDataFile {
 public:
 	class MyData {
@@ -28,7 +31,7 @@ public:
 	static const uint32_t DATA_MAGIC = 0x20a99e73;
 	static const uint16_t DATA_VERSION = 1;
 
-	MyPersistentData() : PersistentDataFile(&myData.header, sizeof(MyData), DATA_MAGIC, DATA_VERSION) {};
+	MyPersistentData() : PersistentDataFile(persistentDataPath, &myData.header, sizeof(MyData), DATA_MAGIC, DATA_VERSION) {};
 
 	int getValue_test1() const {
 		return getValue<int>(offsetof(MyData, test1));
@@ -83,10 +86,8 @@ void loop() {
     static unsigned long lastCheck = 0;
     if (millis() - lastCheck >= 10000) {
         lastCheck = millis();
-        const char *persistentDataPath = "/usr/test04.dat";
 
         MyPersistentData data;
-        data.withPath(persistentDataPath);
 
         data.load();
 

@@ -88,6 +88,9 @@ void _assertFile(const char *msg, const char *gotPath, const char *expectedPath,
 	free(expectedData);
 }
 
+const char *persistentDataPath = "./temp02.dat";
+
+
 class MyPersistentData : public StorageHelperRK::PersistentDataFile {
 public:
 	class MyData {
@@ -108,7 +111,7 @@ public:
 	static const uint32_t DATA_MAGIC = 0x20a99e73;
 	static const uint16_t DATA_VERSION = 1;
 
-	MyPersistentData() : PersistentDataFile(&myData.header, sizeof(MyData), DATA_MAGIC, DATA_VERSION) {};
+	MyPersistentData() : PersistentDataFile(persistentDataPath, &myData.header, sizeof(MyData), DATA_MAGIC, DATA_VERSION) {};
 
 	int getValue_test1() const {
 		return getValue<int>(offsetof(MyData, test1));
@@ -170,7 +173,7 @@ public:
 	static const uint32_t DATA_MAGIC = 0x20a99e73;
 	static const uint16_t DATA_VERSION = 1;
 
-	MyPersistentData2() : PersistentDataFile(&myData.header, sizeof(MyData), DATA_MAGIC, DATA_VERSION) {};
+	MyPersistentData2() : PersistentDataFile(persistentDataPath, &myData.header, sizeof(MyData), DATA_MAGIC, DATA_VERSION) {};
 
 	int getValue_test1() const {
 		return getValue<int>(offsetof(MyData, test1));
@@ -218,11 +221,9 @@ public:
 
 
 void customPersistentDataTest() {
-	const char *persistentDataPath = "./temp02.dat";
 	unlink(persistentDataPath);
 
 	MyPersistentData data;
-	data.withPath(persistentDataPath);
 	bool bResult;
 	String s;
 
@@ -260,7 +261,6 @@ void customPersistentDataTest() {
 
 
 	MyPersistentData data2;
-	data2.withPath(persistentDataPath);
 	data2.load();
 
 	assertInt("", data2.getValue_test1(), 0x55aa55aa);
@@ -270,7 +270,6 @@ void customPersistentDataTest() {
 
 	// Simulate a new version that adds a new field without changing the version or magic
 	MyPersistentData2 data2b;
-	data2b.withPath(persistentDataPath);
 	data2b.load();
 
 	assertInt("", data2b.getValue_test1(), 0x55aa55aa);
@@ -285,7 +284,6 @@ void customPersistentDataTest() {
 	data2b.save();
 
 	MyPersistentData2 data2c;
-	data2c.withPath(persistentDataPath);
 	data2c.load();
 
 	assertInt("", data2c.getValue_test5(), 12345);

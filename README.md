@@ -2,9 +2,9 @@
 
 Library for storing data in EEPROM, file system, SD card, FRAM, etc. on Particle devices
 
-Github: https://github.com/rickkas7/StorageHelperRK
-License: MIT (free for commercial or non-commercial use, including use in closed-source projects)
-Full browsable API: 
+- Github: https://github.com/rickkas7/StorageHelperRK
+- License: MIT (free for commercial or non-commercial use, including use in closed-source projects)
+- Full browsable API: https://rickkas7.github.io/StorageHelperRK/
 
 
 ## Persistent Data

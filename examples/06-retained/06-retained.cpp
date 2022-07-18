@@ -7,11 +7,10 @@ SerialLogHandler logHandler(LOG_LEVEL_INFO);
 SYSTEM_THREAD(ENABLED);
 SYSTEM_MODE(SEMI_AUTOMATIC);
 
+// Store data at the beginning of EEPROM
+static const int EEPROM_OFFSET = 0;
 
-const char *persistentDataPath = "/usr/test04.dat";
-
-
-class MyPersistentData : public StorageHelperRK::PersistentDataFile {
+class MyPersistentData : public StorageHelperRK::PersistentDataRetained {
 public:
 	class MyData {
 	public:
@@ -28,10 +27,10 @@ public:
 		// OK to add more fields here 
 	};
 
-	static const uint32_t DATA_MAGIC = 0x20a99e74;
+	static const uint32_t DATA_MAGIC = 0x20a99e76;
 	static const uint16_t DATA_VERSION = 1;
 
-	MyPersistentData() : PersistentDataFile(persistentDataPath, &myData.header, sizeof(MyData), DATA_MAGIC, DATA_VERSION) {};
+	MyPersistentData() : PersistentDataRetained(&myData.header, sizeof(MyData), DATA_MAGIC, DATA_VERSION) {};
 
 	int getValue_test1() const {
 		return getValue<int>(offsetof(MyData, test1));
@@ -74,13 +73,12 @@ public:
 	MyData myData;
 };
 
+retained MyPersistentData persistentData;
 
-MyPersistentData persistentData;
 
 
 void setup() {
-	// Load the persistent data
-	persistentData.setup();
+	persistentData.load();
 
 	Particle.connect();
 }
@@ -95,9 +93,8 @@ void loop() {
         persistentData.setValue_test2(!persistentData.getValue_test2());
         persistentData.setValue_test3(persistentData.getValue_test3() - 0.1);
         persistentData.setValue_test4("testing!"); 
-        persistentData.flush(true);
 
-        persistentData.logData("test");
+		persistentData.logData("test");
     }  
 }
 

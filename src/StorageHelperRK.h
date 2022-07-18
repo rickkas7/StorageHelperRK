@@ -723,7 +723,7 @@ public:
          */
         uint32_t getHash() const;
 
-        static const uint32_t HASH_SEED = 0x851c2a3f;
+        static const uint32_t HASH_SEED = 0x851c2a3f; //!< Murmur32 hash seed value (randomly generated)
 
     protected:
         /**
@@ -770,9 +770,33 @@ public:
         uint32_t saveDelayMs = 1000; //!< How long to wait to save before writing file to disk. Set to 0 to write immediately.
     };
 
+    /**
+     * @brief Class for persistent data stored in retained memory
+     * 
+     * Retained memory (backup RAM, SRAM) is supported on Gen 2 and Gen 3 devices and is around 3K bytes in size.
+     * It's preserved across system reset and sometimes across flashing new code. On some Gen 2 devices an external
+     * battery or supercap can be added to preserve data on power-down. 
+     * 
+     * Retained memory is not supported on the P2 or Photon 2.
+     */
+    class PersistentDataRetained : public PersistentDataBase {
+    public:
+        /**
+         * @brief Class for persistent data saved in retained memory
+         * 
+         * @param savedDataHeader Pointer to the saved data header in retained memory (backup RAM, SRAM)
+         * @param savedDataSize size of the whole structure, including the user data after it 
+         * @param savedDataMagic Magic bytes to use for this data
+         * @param savedDataVersion Version to use for this data
+         */
+        PersistentDataRetained(SavedDataHeader *savedDataHeader, size_t savedDataSize, uint32_t savedDataMagic, uint16_t savedDataVersion) : 
+            PersistentDataBase(savedDataHeader, savedDataSize, savedDataMagic, savedDataVersion) {
+        };
+    };
+
 #ifndef UNITTEST
     /**
-     * @brief Base class for persistent data stored in emulated EEPROM
+     * @brief Class for persistent data stored in emulated EEPROM
      * 
      * This is only recommended for Gen 2 devices. On Gen 3 devices, EEPROM is implemented as a file in the file
      * system anyway, so it's more efficient to just store your persistent data in its own file.
@@ -781,7 +805,7 @@ public:
     class PersistentDataEEPROM : public PersistentDataBase {
     public:
         /**
-         * @brief Base class for persistent data saved in file
+         * @brief Class for persistent data saved in emulated EEPROM
          * 
          * @param eepromOffset Offset into the EEPROM to store the data.
          * @param savedDataHeader Pointer to the saved data header
@@ -864,6 +888,12 @@ public:
     };
     #endif // defined(__MB85RC256V_FRAM_RK) || defined(DOXYGEN_BUILD)
 
+    /**
+     * @brief Base class for data stored to a file system (POSIX, SdFat, SPIFFS)
+     * 
+     * Since using the Gen 3/P2/Photon 2 POSIX file system is a common use-case, there is a concrete
+     * subclass of this, PersistentDataFile, for use with POSIX file systems. 
+     */
     class PersistentDataFileSystem : public PersistentDataBase {
     public:
         /**
@@ -915,13 +945,13 @@ public:
  
 
     protected:
-        FileSystemBase *fs;
-        String filename;
+        FileSystemBase *fs; //!< The file system object the persistent data will be stored on
+        String filename; //!<  The filename on the file system
     };
 
     #if HAL_PLATFORM_FILESYSTEM || defined(UNITTEST) || defined(DOXYGEN_BUILD)
     /**
-     * @brief Base class for persistent data stored in a file on the POSIX file system
+     * @brief Class for persistent data stored in a file on the POSIX file system on Gen 3, P2, and Photon 2
      * 
      */
     class PersistentDataFile : public PersistentDataFileSystem {

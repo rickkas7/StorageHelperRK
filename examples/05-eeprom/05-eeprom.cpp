@@ -27,7 +27,7 @@ public:
 		// OK to add more fields here 
 	};
 
-	static const uint32_t DATA_MAGIC = 0x20a99e73;
+	static const uint32_t DATA_MAGIC = 0x20a99e75;
 	static const uint16_t DATA_VERSION = 1;
 
 	MyPersistentData() : PersistentDataEEPROM(EEPROM_OFFSET, &myData.header, sizeof(MyData), DATA_MAGIC, DATA_VERSION) {};
@@ -73,11 +73,15 @@ public:
 	MyData myData;
 };
 
-
+MyPersistentData persistentData;
 
 
 void setup() {
-	fram.begin();
+	// Wait 1 second after updating any data to save, so multiple changes made at the same time can be grouped
+	// together and require only one save
+	persistentData
+		.withSaveDelayMs(1000)
+		.setup();
 	
 	Particle.connect();
 }
@@ -88,18 +92,16 @@ void loop() {
     if (millis() - lastCheck >= 10000) {
         lastCheck = millis();
 
-        MyPersistentData data;
+        persistentData.setValue_test1(persistentData.getValue_test1() + 1);
+        persistentData.setValue_test2(!persistentData.getValue_test2());
+        persistentData.setValue_test3(persistentData.getValue_test3() - 0.1);
+        persistentData.setValue_test4("testing!"); 
 
-        data.load();
-
-        data.logData("after loading");
-
-        data.setValue_test1(data.getValue_test1() + 1);
-        data.setValue_test2(!data.getValue_test2());
-        data.setValue_test3(data.getValue_test3() - 0.1);
-        data.setValue_test4("testing!"); 
-        data.flush(true);
+        persistentData.logData("test");
     }  
+
+	// Save any data if necessary
+	persistentData.flush(false);
 }
 
 

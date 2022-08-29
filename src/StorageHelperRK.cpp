@@ -135,7 +135,10 @@ void StorageHelperRK::PersistentDataBase::initialize() {
 //
 bool StorageHelperRK::PersistentDataEEPROM::load() {
     WITH_LOCK(*this) {
-        HAL_EEPROM_Get(eepromOffset, savedDataHeader, savedDataSize);
+        for(int idx = 0; idx < (int)savedDataSize; idx++) {
+            ((uint8_t *)savedDataHeader)[idx] = EEPROM.read(idx);
+        }
+
         if (!validate(savedDataHeader->size)) {
             initialize();
         }
@@ -146,7 +149,23 @@ bool StorageHelperRK::PersistentDataEEPROM::load() {
 
 void StorageHelperRK::PersistentDataEEPROM::save() {
     WITH_LOCK(*this) {
-        HAL_EEPROM_Put(eepromOffset, savedDataHeader, savedDataSize);
+        for(int idx = 0; idx < (int) savedDataSize; idx++) {
+            EEPROM.write(idx, ((const uint8_t *)savedDataHeader)[idx]);
+        }
+        
+        /*
+        Log.info("saving EEPROM size=%d, offset=%d", (int)savedDataSize, (int)eepromOffset);
+        Log.dump((const uint8_t *)savedDataHeader, savedDataSize);
+        Log.print("\n");
+
+        uint8_t test[16] = {0xff};
+        for(int idx = 0; idx < (int) sizeof(test); idx++) {
+            test[idx] = EEPROM.read(idx);
+        }
+        Log.info("read back header");
+        Log.dump(test, sizeof(test));
+        Log.print("\n");
+        */
     }
 }
 #endif // UNITTEST

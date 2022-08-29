@@ -309,6 +309,10 @@ You can also subclass PersistentDataBase in the same way as PersistentDataEEPROM
 
 ## Version history
 
+### 0.0.2 (2022-08-29)
+
+- Fixed a bug that prevented EEPROM data from being saved. 
+
 ### 0.0.1 (2022-07-18)
 
 - Pulled the code from SleepHelper and added documentation

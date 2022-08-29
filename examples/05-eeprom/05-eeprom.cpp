@@ -77,6 +77,10 @@ MyPersistentData persistentData;
 
 
 void setup() {
+	// Useful for testing. Also set the log level to LOG_LEVEL_TRACE
+	// waitFor(Serial.isConnected, 15000);
+  	// delay(1000);
+
 	// Wait 1 second after updating any data to save, so multiple changes made at the same time can be grouped
 	// together and require only one save
 	persistentData

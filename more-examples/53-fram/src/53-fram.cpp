@@ -77,8 +77,6 @@ public:
 };
 
 
-
-
 void setup() {
     // Optional: Enable to make it easier to see debug USB serial messages at startup
     waitFor(Serial.isConnected, 10000);

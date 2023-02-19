@@ -75,6 +75,8 @@ bool StorageHelperRK::PersistentDataBase::setValueString(size_t offset, size_t s
     return result;
 }
 
+// #define LOG_HASH
+
 uint32_t StorageHelperRK::PersistentDataBase::getHash() const {
     uint32_t hash;
 
@@ -83,10 +85,11 @@ uint32_t StorageHelperRK::PersistentDataBase::getHash() const {
         uint32_t savedHash = savedDataHeader->hash;
         savedDataHeader->hash = 0;
 
-        // Log.trace("getHash size=%u savedHash=%08lx", (int)savedDataHeader->size, savedHash);
-        // Log.dump((const uint8_t *)savedDataHeader, savedDataHeader->size);
-        // Log.print("\n");
-
+#ifdef LOG_HASH
+        Log.trace("getHash size=%u savedHash=%08lx", (int)savedDataHeader->size, savedHash);
+        Log.dump((const uint8_t *)savedDataHeader, savedDataHeader->size);
+        Log.print("\n");
+#endif 
         hash = StorageHelperRK::murmur3_32((const uint8_t *)savedDataHeader, savedDataHeader->size, HASH_SEED);
         savedDataHeader->hash = savedHash;
     }
@@ -98,6 +101,11 @@ uint32_t StorageHelperRK::PersistentDataBase::getHash() const {
 
 void StorageHelperRK::PersistentDataBase::updateHash() {
     savedDataHeader->hash = getHash();
+#ifdef LOG_HASH
+        Log.trace("updateHash size=%u hash=%08lx", (int)savedDataHeader->size, savedDataHeader->hash);
+        Log.dump((const uint8_t *)savedDataHeader, savedDataHeader->size);
+        Log.print("\n");
+#endif
     saveOrDefer();
 }
 
@@ -107,7 +115,7 @@ bool StorageHelperRK::PersistentDataBase::validate(size_t dataSize) {
 
     uint32_t hash = getHash();
 
-    if (logData) {
+    if (logData && dataSize < 4096) {
         Log.info("validating data size=%d", (int)dataSize);
         Log.dump((const uint8_t *)savedDataHeader, dataSize);
         Log.print("\n");
@@ -147,6 +155,7 @@ void StorageHelperRK::PersistentDataBase::initialize() {
 }
 
 void StorageHelperRK::PersistentDataBase::save() {
+    savedDataHeader->hash = getHash();
     if (logData) {
         Log.info("saving data size=%d", (int)savedDataHeader->size);
         Log.dump((const uint8_t *)savedDataHeader, savedDataHeader->size);
@@ -159,12 +168,20 @@ void StorageHelperRK::PersistentDataBase::save() {
 //
 // PersistentDataEEPROM
 //
+// #define LOG_EEPROM_READ_WRITE
+
 bool StorageHelperRK::PersistentDataEEPROM::load() {
     WITH_LOCK(*this) {
+        // HAL_EEPROM_Get(eepromOffset, savedDataHeader, savedDataSize);        
         for(int idx = 0; idx < (int)savedDataSize; idx++) {
-            ((uint8_t *)savedDataHeader)[idx] = EEPROM.read(idx);
+            ((uint8_t *)savedDataHeader)[idx] = EEPROM.read(eepromOffset + idx);
         }
-
+#ifdef LOG_EEPROM_READ_WRITE
+        Log.info("loaded EEPROM size=%d, offset=%d", (int)savedDataSize, (int)eepromOffset);
+        Log.dump((const uint8_t *)savedDataHeader, savedDataSize);
+        Log.print("\n");
+#endif
+        
         if (!validate(savedDataHeader->size)) {
             initialize();
         }
@@ -175,23 +192,24 @@ bool StorageHelperRK::PersistentDataEEPROM::load() {
 
 void StorageHelperRK::PersistentDataEEPROM::save() {
     WITH_LOCK(*this) {
+        // HAL_EEPROM_Put(eepromOffset, savedDataHeader, savedDataSize);        
         for(int idx = 0; idx < (int) savedDataSize; idx++) {
-            EEPROM.write(idx, ((const uint8_t *)savedDataHeader)[idx]);
+            EEPROM.write(eepromOffset + idx, ((const uint8_t *)savedDataHeader)[idx]);
         }
         
-        /*
+#ifdef LOG_EEPROM_READ_WRITE        
         Log.info("saving EEPROM size=%d, offset=%d", (int)savedDataSize, (int)eepromOffset);
         Log.dump((const uint8_t *)savedDataHeader, savedDataSize);
         Log.print("\n");
 
         uint8_t test[16] = {0xff};
         for(int idx = 0; idx < (int) sizeof(test); idx++) {
-            test[idx] = EEPROM.read(idx);
+            test[idx] = EEPROM.read(eepromOffset + idx);
         }
         Log.info("read back header");
         Log.dump(test, sizeof(test));
         Log.print("\n");
-        */
+#endif        
     }
     PersistentDataBase::save();
 }
@@ -231,7 +249,7 @@ void StorageHelperRK::PersistentDataFileSystem::save() {
     WITH_LOCK(*this) {
         int fd = fs->open(filename, O_RDWR | O_CREAT | O_TRUNC);
         if (fd != -1) {            
-            size_t count = fs->write((const uint8_t *)savedDataHeader, savedDataSize);
+            /* size_t count = */fs->write((const uint8_t *)savedDataHeader, savedDataSize);
 
             // Log.info("request to write %d, wrote %d bytes", (int)savedDataSize, (int) count);
             // Log.dump((const uint8_t *)savedDataHeader, savedDataSize);

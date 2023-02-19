@@ -1,14 +1,14 @@
 #include "StorageHelperRK.h"
 
 
-SerialLogHandler logHandler(LOG_LEVEL_INFO);
+SerialLogHandler logHandler(LOG_LEVEL_TRACE);
 
 
 SYSTEM_THREAD(ENABLED);
 SYSTEM_MODE(SEMI_AUTOMATIC);
 
 // Store data at the beginning of EEPROM
-static const int EEPROM_OFFSET = 0;
+static const int EEPROM_OFFSET = 10;
 
 class MyPersistentData : public StorageHelperRK::PersistentDataEEPROM {
 public:
@@ -78,15 +78,18 @@ MyPersistentData persistentData;
 
 void setup() {
 	// Useful for testing. Also set the log level to LOG_LEVEL_TRACE
-	// waitFor(Serial.isConnected, 15000);
-  	// delay(1000);
+	waitFor(Serial.isConnected, 15000);
+  	delay(1000);
 
 	// Wait 1 second after updating any data to save, so multiple changes made at the same time can be grouped
 	// together and require only one save
 	persistentData
 		.withSaveDelayMs(1000)
 		.setup();
-	
+
+	// .withLogData()
+
+
 	Particle.connect();
 }
 

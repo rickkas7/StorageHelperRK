@@ -309,6 +309,10 @@ You can also subclass PersistentDataBase in the same way as PersistentDataEEPROM
 
 ## Version history
 
+### 0.0.4 (2023-02-19)
+
+- Fix a bug where EEPROM saving did not work with an offset other than 0
+
 ### 0.0.3 (2022-12-27)
 
 - Added a new example for data validation and initialization (07-validate).

@@ -309,6 +309,10 @@ You can also subclass PersistentDataBase in the same way as PersistentDataEEPROM
 
 ## Version history
 
+### 0.0.5 (2023-02-20)
+
+- Fixed a bug where using EEPROM mode could SOS+1 fault depending on the contents of the EEPROM
+
 ### 0.0.4 (2023-02-19)
 
 - Fix a bug where EEPROM saving did not work with an offset other than 0

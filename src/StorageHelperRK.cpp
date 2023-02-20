@@ -109,33 +109,35 @@ void StorageHelperRK::PersistentDataBase::updateHash() {
     saveOrDefer();
 }
 
-
 bool StorageHelperRK::PersistentDataBase::validate(size_t dataSize) {
     bool isValid = false;
-
-    uint32_t hash = getHash();
 
     if (logData && dataSize < 4096) {
         Log.info("validating data size=%d", (int)dataSize);
         Log.dump((const uint8_t *)savedDataHeader, dataSize);
         Log.print("\n");
     }
+    uint32_t hash = 0;
 
     if (dataSize >= 12 && 
         savedDataHeader->magic == savedDataMagic && 
         savedDataHeader->version == savedDataVersion &&
-        savedDataHeader->size <= (uint16_t) dataSize &&
-        savedDataHeader->hash == hash) {                
-        if ((size_t)dataSize < savedDataSize) {
-            // Current structure is larger than what's in the file; pad with zero bytes
-            uint8_t *p = (uint8_t *)savedDataHeader;
-            for(size_t ii = (size_t)dataSize; ii < savedDataSize; ii++) {
-                p[ii] = 0;
+        savedDataHeader->size <= (uint16_t) dataSize) {
+        
+        hash = getHash();
+
+        if (savedDataHeader->hash == hash) {                
+            if ((size_t)dataSize < savedDataSize) {
+                // Current structure is larger than what's in the file; pad with zero bytes
+                uint8_t *p = (uint8_t *)savedDataHeader;
+                for(size_t ii = (size_t)dataSize; ii < savedDataSize; ii++) {
+                    p[ii] = 0;
+                }
             }
+            savedDataHeader->size = (uint16_t) savedDataSize;
+            savedDataHeader->hash = getHash();
+            isValid = true;
         }
-        savedDataHeader->size = (uint16_t) savedDataSize;
-        savedDataHeader->hash = getHash();
-        isValid = true;
     }   
     if (!isValid && dataSize != 0 && savedDataHeader->magic != 0) {
         // Only log if the data is not empty and was not zeroed out, to avoid logging when doing a load operation on
@@ -169,13 +171,18 @@ void StorageHelperRK::PersistentDataBase::save() {
 // PersistentDataEEPROM
 //
 // #define LOG_EEPROM_READ_WRITE
+// #define USE_HAL_EEPROM
 
 bool StorageHelperRK::PersistentDataEEPROM::load() {
     WITH_LOCK(*this) {
-        // HAL_EEPROM_Get(eepromOffset, savedDataHeader, savedDataSize);        
+#ifdef USE_HAL_EEPROM
+        HAL_EEPROM_Get(eepromOffset, savedDataHeader, savedDataSize);        
+#else
         for(int idx = 0; idx < (int)savedDataSize; idx++) {
             ((uint8_t *)savedDataHeader)[idx] = EEPROM.read(eepromOffset + idx);
         }
+#endif
+
 #ifdef LOG_EEPROM_READ_WRITE
         Log.info("loaded EEPROM size=%d, offset=%d", (int)savedDataSize, (int)eepromOffset);
         Log.dump((const uint8_t *)savedDataHeader, savedDataSize);
@@ -192,11 +199,14 @@ bool StorageHelperRK::PersistentDataEEPROM::load() {
 
 void StorageHelperRK::PersistentDataEEPROM::save() {
     WITH_LOCK(*this) {
-        // HAL_EEPROM_Put(eepromOffset, savedDataHeader, savedDataSize);        
+#ifdef USE_HAL_EEPROM
+        HAL_EEPROM_Put(eepromOffset, savedDataHeader, savedDataSize);        
+#else
         for(int idx = 0; idx < (int) savedDataSize; idx++) {
             EEPROM.write(eepromOffset + idx, ((const uint8_t *)savedDataHeader)[idx]);
         }
-        
+#endif
+
 #ifdef LOG_EEPROM_READ_WRITE        
         Log.info("saving EEPROM size=%d, offset=%d", (int)savedDataSize, (int)eepromOffset);
         Log.dump((const uint8_t *)savedDataHeader, savedDataSize);
